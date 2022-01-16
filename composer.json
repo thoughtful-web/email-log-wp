@@ -1,0 +1,50 @@
+{
+    "name": "thoughtful-web/email-log-wp",
+    "description": "Helpful WordPress email logging released as free open source software under GNU GPL-2.0+ License",
+	"version": "0.1.0",
+    "type": "library",
+	"keywords": ["WordPress"],
+	"require": {
+		"php": ">=7.3.5"
+	},
+    "license": "GPL-2.0-or-later",
+	"repositories": [
+		{
+			"type": "vcs",
+			"url": "https://github.com/thoughtful-web/email-log-wp"
+		}
+	],
+    "authors": [
+        {
+            "name": "Zachary Kendall Watkins",
+            "email": "zwatkins.it@gmail.com",
+			"homepage": "https://github.com/zachwatkins/",
+            "role": "Creator"
+        },
+		{
+			"name"    : "Contributors",
+			"homepage": "https://github.com/thoughtful-web/email-log-wp/graphs/contributors"
+		}
+    ],
+	"support": {
+		"issues": "https://github.com/thoughtful-web/email-log-wp/issues",
+		"source": "https://github.com/thoughtful-web/email-log-wp/",
+		"docs": "https://raw.githubusercontent.com/thoughtful-web/email-log-wp/main/README.md"
+	},
+	"readme": "README.md",
+	"autoload": {
+        "psr-4": {
+			"ThoughtfulWeb\\LibraryWP\\": "src/"
+		}
+	},
+	"config": {
+		"classmap-authoritative": true
+	},
+	"require-dev": {
+		"wp-coding-standards/wpcs": "*"
+	},
+	"scripts": {},
+    "extra": {
+        "phpcodesniffer-search-depth": 5
+    }
+}

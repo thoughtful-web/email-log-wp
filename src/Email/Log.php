@@ -20,7 +20,7 @@ class Log {
 	 * @var string $log The mail log file. This will be recalculated on class construction to point
 	 *                  to the ABSPATH parent directory.
 	 */
-	private $log = 'wp-mail.log';
+	private $file = 'wp-mail.log';
 
 	/**
 	 * The alternate email log file.
@@ -28,7 +28,7 @@ class Log {
 	 * @var string $alt_log The mail log file. This will be recalculated on class construction to point
 	 *                      to the ABSPATH parent directory.
 	 */
-	private $alt_log = 'wp-mail.log';
+	private $dir = '';
 
 	/**
 	 * Class constructor.
@@ -37,9 +37,7 @@ class Log {
 	 */
 	public function __construct() {
 
-		$this->log = dirname( ABSPATH, 2 ) . '/' . $this->log;
-
-		$this->alt_log = ABSPATH . '/' . $this->log;
+		$this->dir = dirname( ABSPATH, 2 ) . '/';
 
 		$this->add_hooks();
 
@@ -56,15 +54,6 @@ class Log {
 
 		add_action( 'wp_mail_failed', array( $this, 'action_wp_mail_failed' ) );
 		add_action( 'phpmailer_init', array( $this, 'action_phpmailer_init' ) );
-		add_action( 'init', function(){
-			if ( ! wp_doing_cron() && ! wp_doing_ajax() ) {
-				error_log('init');
-				// Error.
-				wp_mail( 'asdf@#.com', 'Test', 'This is a terrible test of monolog and email logging to a file.' );
-				// Success.
-				wp_mail( 'admin@homeandranch.local', 'Test', 'This is a terrible test of monolog and email logging to a file.' );
-			}
-		});
 
 	}
 
@@ -96,23 +85,26 @@ class Log {
 
 		$str     = '';
 		$message = array();
-		$recipients['to'][] = 'asdf@local.dev';
 
 		foreach ( $recipients as $type => $addresses ) {
-
-			$message[ $type] = ucwords( $type ) . ': ';
-
+			
 			if ( empty ( $addresses ) ) {
 				continue;
 			}
 
+			$message[$type] = '(' . ucwords( $type ) . ') ';
+
 			$address_strings = array();
 
 			foreach ( $addresses as $address ) {
-				$address_strings[] = $address[1] ? "{$address[1]} <{$address[0]}>" : $address[0];
+				if ( 1 < count($address) && $address[1] ) {
+					$address_strings[] = "{$address[1]} <{$address[0]}>";
+				} else {
+					$address_strings[] = $address[0];
+				}
 			}
 
-			$message[ $type ] = implode( ', ', $address_strings );
+			$message[$type] .= implode( ', ', $address_strings );
 		}
 
 		$str = implode( '; ', $message );
@@ -158,7 +150,7 @@ class Log {
 			'bcc' => $bcc,
 		);
 		$recipients = $this->assemble_recipient_str( $recipients_arr );
-		return "Subject: {$subject}; {$recipients}; Body: {$body}";
+		return "Subject: {$subject}; Recipients: {$recipients}; Body: {$body}";
 
 	}
 
@@ -243,25 +235,19 @@ class Log {
 	 */
 	private function log_message( $code, $message ) {
 
-		$log = $this->log;
+		$log = $this->dir . $this->file;
 		if ( ! file_exists( $log ) ) {
-			if ( ! is_writable( $log ) ) {
-				$log = $this->alt_log;
-				if ( ! is_writable( $log ) ) {
-					return false;
-				}
+			$result = file_put_contents( $log, '' );
+			if ( false === $result ) {
+				error_log( 'The email log could not be created in the directory above the public folder.' );
+				return false;
 			}
-			$handle = fopen( $log, 'a' );
-			fclose( $handle );
 		}
 
 		$messages  = $this->get_timestamp();
-		$messages .= 400 <= $error ? ' [!] Failed: ' : ' [+] Sent: ';
+		$messages .= 400 <= $code ? ' [Failed] ' : ' [Sent] ';
 		$messages .= $message;
 		$messages .= PHP_EOL;
-
-		$log_filename = basename( $log );
-		$alt_log = ABSPATH . '/' . $log_filename;
 
 		error_log( $messages, 3, $log );
 
@@ -294,7 +280,7 @@ class Log {
 	 * @return void
 	 */
 	public function action_phpmailer_init( $phpmailer ) {
-
+		
 		$message = $this->phpmailer_message( $phpmailer );
 
 		$this->log_message( 200, $message );
